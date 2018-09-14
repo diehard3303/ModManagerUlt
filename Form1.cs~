@@ -1,0 +1,315 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+using Extensions;
+
+namespace ModManagerUlt {
+
+	/// <summary>
+	///
+	/// </summary>
+	/// <seealso cref="Form" />
+	public partial class Form1 : Form {
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="Form1"/> class.
+		/// </summary>
+		public Form1() {
+			InitializeComponent();
+			}
+
+		private void AtsLoad() {
+			var ats = new AtsLoader();
+			var profLst = ats.LoadAtsProfiles();
+			var groupsLst = ats.LoadAtsGroups();
+			foreach (var v in profLst) {
+				lstProfiles.Items.Add(v.GetLastFolderName());
+				}
+
+			foreach (var t in groupsLst) {
+				lstSortMods.Items.Add(t.GetLastFolderName());
+				}
+			}
+
+		private void bAddNewProfile_Click(object sender, EventArgs e) {
+			if (txtAddProfile.Text.IsNullOrEmpty()) return;
+			var prof = new ProfileWorker();
+			prof.AddNewProfile(txtAddProfile.Text);
+			txtAddProfile.Text = string.Empty;
+			}
+
+		private void chkAts_CheckedChanged(object sender, EventArgs e) {
+			if (!chkAts.Checked) return;
+			var gi = new GameInfo();
+			var ats = new AtsInit();
+			ats.InitializeAts();
+			chkEts.Checked = false;
+			chkFs2015.Checked = false;
+			chkFs2017.Checked = false;
+			gi.SetGame("ATS");
+			ClearLstBox();
+			AtsLoad();
+			lblGame.Text = @"Active Game: American Truck Simulator";
+			lblActiveProfile.Text = @"Active Profile:";
+			sortModsToolStripMenuItem.Text = @"Sort Mods for ATS";
+			}
+
+		private void chkEts_CheckedChanged(object sender, EventArgs e) {
+			if (!chkEts.Checked) return;
+			var gi = new GameInfo();
+			var ets = new EtsInit();
+			ets.InitializeEts();
+			chkAts.Checked = false;
+			chkFs2015.Checked = false;
+			chkFs2017.Checked = false;
+			gi.SetGame("ETS");
+			ClearLstBox();
+			EtsLoad();
+			lblGame.Text = @"Active Game: Euro Truck Simulator 2";
+			lblActiveProfile.Text = @"Active Profile:";
+			sortModsToolStripMenuItem.Text = @"Sort Mods for ETS";
+			}
+
+		private void chkFs2015_CheckedChanged(object sender, EventArgs e) {
+			if (!chkFs2015.Checked) return;
+			var gi = new GameInfo();
+			var fs15 = new Fs15Init();
+			chkAts.Checked = false;
+			chkFs2017.Checked = false;
+			chkEts.Checked = false;
+			fs15.InitializeFs15();
+			gi.SetGame("FS15");
+			ClearLstBox();
+			Fs15Load();
+			lblGame.Text = @"Active Game: Farming Simulator 2015";
+			lblActiveProfile.Text = @"Active Profile:";
+			sortModsToolStripMenuItem.Text = @"Sort Mods for FS2015";
+			}
+
+		private void chkFs2017_CheckedChanged(object sender, EventArgs e) {
+			if (!chkFs2017.Checked) return;
+			var gi = new GameInfo();
+			var fs17 = new Fs17Init();
+			chkAts.Checked = false;
+			chkFs2015.Checked = false;
+			chkEts.Checked = false;
+			fs17.InitializeFs17();
+			gi.SetGame("FS17");
+			ClearLstBox();
+			Fs17Load();
+			lblGame.Text = @"Active Game: Farming Simulator 2017";
+			lblActiveProfile.Text = @"Active Profile:";
+			sortModsToolStripMenuItem.Text = @"Sort Mods for FS2017";
+			}
+
+		private void ClearLstBox() {
+			lstAvailableMods.Items.Clear();
+			lstProfileMods.Items.Clear();
+			lstProfiles.Items.Clear();
+			lstSortMods.Items.Clear();
+			}
+
+		private void EtsLoad() {
+			var ets = new EtsLoader();
+			var profLst = ets.LoadEtsProfiles();
+			var groupsLst = ets.LoadEtsGroups();
+			foreach (var v in profLst) {
+				lstProfiles.Items.Add(v.GetLastFolderName());
+				}
+
+			foreach (var t in groupsLst) {
+				lstSortMods.Items.Add(t.GetLastFolderName());
+				}
+			}
+
+		private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
+			Application.Exit();
+			}
+
+		private void Form1_FormClosing(object sender, FormClosingEventArgs e) {
+			var gi = new GameInfo();
+			var reg = new AtsRegWork(true);
+			reg.Write(RegKeys.CURRENT_PROFILE, "");
+			gi.SetGame("");
+			}
+
+		private void Fs15Load() {
+			var fs15 = new Fs15Loader();
+			var profLst = fs15.LoadFs15Profiles();
+			var groupsLst = fs15.LoadFs15Groups();
+			foreach (var v in profLst) {
+				lstProfiles.Items.Add(v.GetLastFolderName());
+				}
+
+			foreach (var t in groupsLst) {
+				lstSortMods.Items.Add(t.GetLastFolderName());
+				}
+			}
+
+		private void Fs17Load() {
+			var fs17 = new Fs17Loader();
+			var profLst = fs17.LoadFs17Profiles();
+			var groupsLst = fs17.LoadFs17Groups();
+			foreach (var v in profLst) {
+				lstProfiles.Items.Add(v.GetLastFolderName());
+				}
+
+			foreach (var t in groupsLst) {
+				lstSortMods.Items.Add(t.GetLastFolderName());
+				}
+			}
+
+		private void lstAvailableMods_SelectedIndexChanged(object sender, EventArgs e) {
+			var reg = new AtsRegWork(true);
+			var gam = reg.Read(RegKeys.CURRENT_GAME);
+			var cProf = reg.Read(RegKeys.CURRENT_PROFILE);
+			if (gam.IsNullOrEmpty() || cProf.IsNullOrEmpty()) {
+				MsgBx.Msg("You need to have a Profile / Game active", "Process Error");
+				return;
+				}
+			string tmp;
+			string profPath;
+			Dictionary<string, string> lst = null;
+			lstProfileMods.Items.Clear();
+
+			switch (gam) {
+				case "ATS":
+					var ats = new AtsLoader();
+					var atsp = new AtsRegWork(true);
+					var prof = new ProfileWorker();
+					tmp = ats.LoadAtsModChoice(lstAvailableMods.SelectedItem.ToString());
+					profPath = atsp.Read(AtsRegKeys.ATS_GAME_MOD_FOLDER) + tmp.GetFileName();
+					prof.BuildProfileList(lstAvailableMods.SelectedItem.ToString());
+					SymLinks.CreateSymLink(profPath, tmp, 0);
+					lst = ats.LoadAtsProfileMods(reg.Read(RegKeys.CURRENT_PROFILE));
+					break;
+
+				case "ETS":
+					var ets = new EtsLoader();
+					var etsp = new EtsRegWork(true);
+					prof = new ProfileWorker();
+					tmp = ets.LoadEtsModChoice(lstAvailableMods.SelectedItem.ToString());
+					profPath = etsp.Read(EtsRegKeys.ETS_GAME_MOD_FOLDER) + tmp.GetFileName();
+					prof.BuildProfileList(lstAvailableMods.SelectedItem.ToString());
+					SymLinks.CreateSymLink(profPath, tmp, 0);
+					lst = ets.LoadEtsProfileMods(reg.Read(RegKeys.CURRENT_PROFILE));
+					break;
+
+				case "FS15":
+					var fs15 = new Fs15Loader();
+					var fs15P = new Fs15RegWork(true);
+					tmp = fs15.LoadFs15ModChoice(lstAvailableMods.SelectedItem.ToString());
+					profPath = fs15P.Read(Fs15RegKeys.FS15_PROFILES) + reg.Read(RegKeys.CURRENT_PROFILE) + "\\" +
+							   tmp.GetFileName();
+					prof = new ProfileWorker();
+					prof.BuildProfileList(lstAvailableMods.SelectedItem.ToString());
+					SymLinks.CreateSymLink(profPath, tmp, 0);
+					lst = fs15.LoadFs15ProfileMods(reg.Read(RegKeys.CURRENT_PROFILE));
+					break;
+
+				case "FS17":
+					var fs17 = new Fs17Loader();
+					var fs17P = new Fs17RegWork(true);
+					tmp = fs17.LoadFs17ModChoice(lstAvailableMods.SelectedItem.ToString());
+					profPath = fs17P.Read(Fs17RegKeys.FS17_PROFILES) + reg.Read(RegKeys.CURRENT_PROFILE) + "\\" +
+							   tmp.GetFileName();
+					prof = new ProfileWorker();
+					prof.BuildProfileList(lstAvailableMods.SelectedItem.ToString());
+					SymLinks.CreateSymLink(profPath, tmp, 0);
+					lst = fs17.LoadFs17ProfileMods(reg.Read(RegKeys.CURRENT_PROFILE));
+					break;
+				}
+			if (lst != null)
+				foreach (var v in lst) {
+					lstProfileMods.Items.Add(v.Key);
+					}
+			MsgBx.Msg("Profile Link Created", "Linker");
+			}
+
+		private void lstProfiles_SelectedIndexChanged(object sender, EventArgs e) {
+			var reg = new AtsRegWork(true);
+			var gam = reg.Read(RegKeys.CURRENT_GAME);
+			if (gam.IsNullOrEmpty()) return;
+			lstProfileMods.Items.Clear();
+			Dictionary<string, string> lst = null;
+			lblActiveProfile.Text = @"Active Profile: " + lstProfiles.SelectedItem;
+			reg.Write(RegKeys.CURRENT_PROFILE, lstProfiles.SelectedItem);
+
+			switch (gam) {
+				case "ATS":
+					var prof = new ProfileWorker();
+					var ats = new AtsLoader();
+					lst = ats.LoadAtsProfileMods(lstProfiles.SelectedItem.ToString());
+					prof.SetProfileActive();
+					break;
+
+				case "ETS":
+					prof = new ProfileWorker();
+					var ets = new EtsLoader();
+					lst = ets.LoadEtsProfileMods(lstProfiles.SelectedItem.ToString());
+					prof.SetProfileActive();
+					break;
+
+				case "FS15":
+					prof = new ProfileWorker();
+					var fs15 = new Fs15Loader();
+					lst = fs15.LoadFs15ProfileMods(lstProfiles.SelectedItem.ToString());
+					prof.SetProfileActive();
+					break;
+
+				case "FS17":
+					prof = new ProfileWorker();
+					var fs17 = new Fs17Loader();
+					lst = fs17.LoadFs17ProfileMods(lstProfiles.SelectedItem.ToString());
+					prof.SetProfileActive();
+					break;
+				}
+			if (lst == null) return;
+			foreach (var v in lst) {
+				lstProfileMods.Items.Add(v.Key);
+				}
+			}
+
+		private void lstSortMods_SelectedIndexChanged(object sender, EventArgs e) {
+			var reg = new AtsRegWork(true);
+			var gam = reg.Read(RegKeys.CURRENT_GAME);
+			var chc = lstSortMods.SelectedItem.ToString();
+			lstAvailableMods.Items.Clear();
+			IEnumerable<string> lst = null;
+
+			switch (gam) {
+				case "ATS":
+					var ats = new AtsLoader();
+					lst = ats.LoadAtsGroupMods(chc);
+					break;
+
+				case "ETS":
+					var ets = new EtsLoader();
+					lst = ets.LoadEtsGroupMods(chc);
+					break;
+
+				case "FS15":
+					var fs15 = new Fs15Loader();
+					lst = fs15.LoadFs15GroupMods(chc);
+					break;
+
+				case "FS17":
+					var fs17 = new Fs17Loader();
+					lst = fs17.LoadFs17GroupMods(chc);
+					break;
+				}
+			if (lst == null) return;
+			foreach (var v in lst) {
+				lstAvailableMods.Items.Add(v.GetFileName());
+				}
+			}
+
+		private void sortModsToolStripMenuItem_Click(object sender, EventArgs e) {
+			var sort = new ModSorter();
+			var lc = new ListCreator();
+			sort.SortMods();
+			lc.CreateSortedLists();
+			lc.SortedFileListComplete();
+			}
+		}
+	}
